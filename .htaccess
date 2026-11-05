@@ -1,0 +1,11 @@
+RewriteEngine On
+
+# Protege o painel administrativo do site público
+RewriteRule ^painel\.html$ - [F,L]
+RewriteRule ^painel\.js$ - [F,L]
+RewriteRule ^painel\.css$ - [F,L]
+RewriteRule ^api\.php$ - [F,L]
+RewriteRule ^exportar-site\.php$ - [F,L]
+
+# Mantém a página pública como entrada principal do cliente
+DirectoryIndex index.html
