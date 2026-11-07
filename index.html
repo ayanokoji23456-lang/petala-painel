@@ -291,6 +291,44 @@
 <script>
     const mobileMenuBtn = document.getElementById('mobile-menu');
     const navList = document.getElementById('nav-list');
+    const pageDetails = {
+        Buques: {
+            buttonIndex: 0,
+            title: 'Nossos Buquês',
+            subtitle: 'Flores escolhidas com carinho para todos os momentos'
+        },
+        Balao: {
+            buttonIndex: 1,
+            title: 'Balões personalizados',
+            subtitle: 'Alegria em cada detalhe da sua celebração'
+        },
+        cesta: {
+            buttonIndex: 2,
+            title: 'Cestas Especiais',
+            subtitle: 'Presentes delicados para transformar gestos em lembranças'
+        },
+        perso: {
+            buttonIndex: 3,
+            title: 'personalizados',
+            subtitle: 'Criações exclusivas para contar a sua história'
+        },
+        'Plantas/Flores': {
+            buttonIndex: 4,
+            title: 'Plantas/Flores',
+            subtitle: 'Natureza viva para cultivar dentro e fora de casa'
+        },
+        Vasos: {
+            buttonIndex: 5,
+            title: 'Variados',
+            subtitle: 'Peças especiais para deixar o seu ambiente mais bonito'
+        },
+        info: {
+            buttonIndex: 6,
+            title: 'Informações gerais',
+            subtitle: 'Horários, entregas, encomendas e como nos encontrar'
+        }
+    };
+
     mobileMenuBtn.addEventListener('click', () => {
         const isOpened = mobileMenuBtn.getAttribute('aria-expanded') === 'true';
         mobileMenuBtn.setAttribute('aria-expanded', !isOpened);
@@ -303,48 +341,17 @@
         navList.classList.remove('active');
         mobileMenuBtn.setAttribute('aria-expanded', 'false');
 
-        const paginas = document.querySelectorAll('.page-section');
-        paginas.forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
 
-        const botoes = document.querySelectorAll('.nav-links button');
-        botoes.forEach(b => b.classList.remove('active'));
-        const bannerSubtitulo = document.getElementById('banner-subtitulo');
+        const navButtons = document.querySelectorAll('.nav-links button');
+        navButtons.forEach(button => button.classList.remove('active'));
 
-        if (idPagina === 'Buques') {
-            document.getElementById('Buques').classList.add('active');
-            botoes[0].classList.add('active');
-            document.getElementById('banner-titulo').innerText = "Nossos Buquês";
-            bannerSubtitulo.innerText = "Flores escolhidas com carinho para todos os momentos";
-        } else if (idPagina === 'Balao') {
-            document.getElementById('Balao').classList.add('active');
-            botoes[1].classList.add('active');
-            document.getElementById('banner-titulo').innerText = "Balões personalizados";
-            bannerSubtitulo.innerText = "Alegria em cada detalhe da sua celebração";
-        } else if (idPagina === 'cesta') {
-            document.getElementById('cesta').classList.add('active');
-            botoes[2].classList.add('active');
-            document.getElementById('banner-titulo').innerText = "Cestas Especiais";
-            bannerSubtitulo.innerText = "Presentes delicados para transformar gestos em lembranças";
-        } else if (idPagina === 'perso') {
-            document.getElementById('perso').classList.add('active');
-            botoes[3].classList.add('active');
-            document.getElementById('banner-titulo').innerText = "personalizados";
-            bannerSubtitulo.innerText = "Criações exclusivas para contar a sua história";
-        } else if (idPagina === 'Plantas/Flores') {
-            document.getElementById('Plantas/Flores').classList.add('active');
-            botoes[4].classList.add('active');
-            document.getElementById('banner-titulo').innerText = "Plantas/Flores";
-            bannerSubtitulo.innerText = "Natureza viva para cultivar dentro e fora de casa";
-        } else if (idPagina === 'Vasos') {
-            document.getElementById('Vasos').classList.add('active');
-            botoes[5].classList.add('active');
-            document.getElementById('banner-titulo').innerText = "Variados";
-            bannerSubtitulo.innerText = "Peças especiais para deixar o seu ambiente mais bonito";
-        } else if (idPagina === 'info') {
-            document.getElementById('info').classList.add('active');
-            botoes[6].classList.add('active');
-            document.getElementById('banner-titulo').innerText = "Informações gerais";
-            bannerSubtitulo.innerText = "Horários, entregas, encomendas e como nos encontrar";
+        const details = pageDetails[idPagina];
+        if (details) {
+            document.getElementById(idPagina).classList.add('active');
+            navButtons[details.buttonIndex].classList.add('active');
+            document.getElementById('banner-titulo').textContent = details.title;
+            document.getElementById('banner-subtitulo').textContent = details.subtitle;
         } 
 
         window.scrollTo({top: 0, behavior: 'smooth'});
@@ -524,15 +531,14 @@ function renderizarSecao(containerId, listaProdutos, ordenarPorPreco = true) {
             });
         }
 
+        let productIndex = document.querySelectorAll('.produto-card').length;
         listaProdutos.forEach(produto => {
-            let slidesHtml = '';
-            if (produto.imagens && produto.imagens.length > 0) {
-                produto.imagens.forEach((img, index) => {
-                    slidesHtml += `<div class="slide"><img src="${resolverImagemProduto(img)}" data-caminho-alternativo="${img}" onerror="tentarImagemAlternativa(this)" alt="${produto.titulo || 'Produto'} - Imagem ${index + 1}"></div>`;
-                });
-            } else {
-                slidesHtml = `<div class="slide"><div style="width: 100%; height: 300px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 1.1em;">Espaço para imagem</div></div>`;
-            }
+            const slidesHtml = produto.imagens?.length
+                ? produto.imagens.map((image, index) => `
+                    <div class="slide">
+                        <img src="${resolverImagemProduto(image)}" data-caminho-alternativo="${image}" onerror="tentarImagemAlternativa(this)" alt="${produto.titulo || 'Produto'} - Imagem ${index + 1}">
+                    </div>`).join('')
+                : '<div class="slide"><div class="imagem-indisponivel">Espaço para imagem</div></div>';
 
             let precoHtml = '';
             if (produto.preco !== undefined && produto.preco !== null) {
@@ -546,10 +552,9 @@ function renderizarSecao(containerId, listaProdutos, ordenarPorPreco = true) {
             const linkWp = `https://wa.me/5511955506889?text=${mensagemWp}`;
 
             const article = document.createElement('article');
-            const indiceProduto = document.querySelectorAll('.produto-card').length;
             article.classList.add(
                 'produto-card',
-                indiceProduto % 2 === 0 ? 'produto-fundo-verde' : 'produto-fundo-branco'
+                productIndex % 2 === 0 ? 'produto-fundo-verde' : 'produto-fundo-branco'
             );
             article.innerHTML = `
                 <div class="carrossel-container" data-indice="0">
@@ -570,6 +575,7 @@ function renderizarSecao(containerId, listaProdutos, ordenarPorPreco = true) {
                 </div>
             `;
             container.appendChild(article);
+            productIndex += 1;
             article.addEventListener('click', event => {
     if (event.target.closest('a, button')) return;
     abrirDetalhesProduto(produto);

@@ -10,16 +10,41 @@
     --sans: 'Manrope', sans-serif;
 }
 * { box-sizing: border-box; }
+
 html { scroll-behavior: smooth; }
-body { background: var(--paper); color: var(--ink); font: 15px/1.6 var(--sans); margin: 0; }
+
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 15px/1.6 var(--sans);
+    margin: 0;
+}
+
 a { color: inherit; }
-.floral-header { align-items: center; display: flex; justify-content: space-between; margin: auto; max-width: 1240px; padding: 24px 5vw; }
+
+.floral-header {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    margin: auto;
+    max-width: 1240px;
+    padding: 24px 5vw;
+}
+
 .floral-brand { align-items: center; display: inline-flex; font: 600 23px/1 var(--serif); gap: 10px; text-decoration: none; }
 .floral-brand small { color: var(--muted); display: block; font: 500 8px/1.5 var(--sans); letter-spacing: .18em; text-transform: uppercase; }
 .brand-mark { align-items: center; border: 1px solid var(--rose); border-radius: 50%; color: var(--rose); display: inline-flex; font: 600 20px var(--serif); height: 37px; justify-content: center; width: 37px; }
 .back-link { border-bottom: 1px solid var(--ink); font-size: 12px; text-decoration: none; }
-.floral-hero { background: linear-gradient(112deg, #e3eadf 0%, #f6eee8 72%); min-height: 530px; padding: 115px 8vw 95px; position: relative; overflow: hidden; }
-.floral-hero::after { border: 1px solid rgba(181,108,120,.28); border-radius: 50%; content: ''; height: 420px; position: absolute; right: -110px; top: 72px; width: 420px; }
+
+.floral-hero {
+    background: linear-gradient(112deg, #e3eadf 0%, #f6eee8 72%);
+    min-height: 530px;
+    padding: 115px 8vw 95px;
+    position: relative;
+    overflow: hidden;
+}
+
+.floral-hero::after { border: 1px solid rgba(181, 108, 120, .28); border-radius: 50%; content: ''; height: 420px; position: absolute; right: -110px; top: 72px; width: 420px; }
 .kicker { color: var(--rose); font-size: 11px; font-weight: 700; letter-spacing: .18em; margin: 0 0 16px; text-transform: uppercase; }
 .floral-hero h1 { font: 500 clamp(48px, 8vw, 104px)/.87 var(--serif); letter-spacing: -.02em; margin: 0; max-width: 850px; position: relative; z-index: 1; }
 .floral-hero h1 em { color: var(--sage); font-style: italic; }
@@ -27,15 +52,24 @@ a { color: inherit; }
 .hero-action { border-bottom: 1px solid var(--ink); display: inline-flex; font-size: 12px; font-weight: 700; gap: 18px; padding-bottom: 7px; text-decoration: none; text-transform: uppercase; }
 .hero-action span { color: var(--rose); font-size: 17px; line-height: .7; }
 .collections { margin: auto; max-width: 1240px; padding: 110px 5vw 60px; }
-.section-intro { align-items: end; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; margin-bottom: 50px; padding-bottom: 20px; }
+
+.section-intro {
+    align-items: end;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 50px;
+    padding-bottom: 20px;
+}
+
 .section-intro h2, .signature h2 { font: 500 clamp(36px, 5vw, 64px)/.9 var(--serif); margin: 0; }
 .collection-block { margin-bottom: 78px; }
 .collection-heading { align-items: baseline; display: flex; gap: 18px; margin-bottom: 22px; }
 .collection-heading span { color: var(--rose); font-size: 11px; letter-spacing: .12em; }
 .collection-heading h3 { font: 600 28px/1 var(--serif); margin: 0; text-transform: capitalize; }
 .product-grid { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(245px, 1fr)); }
-.floral-card { background: #fff; border: 1px solid rgba(38,51,43,.08); display: flex; flex-direction: column; min-height: 100%; transition: transform .25s ease, box-shadow .25s ease; }
-.floral-card:hover { box-shadow: 0 16px 35px rgba(38,51,43,.1); transform: translateY(-4px); }
+.floral-card { background: #fff; border: 1px solid rgba(38, 51, 43, .08); display: flex; flex-direction: column; min-height: 100%; transition: transform .25s ease, box-shadow .25s ease; }
+.floral-card:hover { box-shadow: 0 16px 35px rgba(38, 51, 43, .1); transform: translateY(-4px); }
 .product-image { aspect-ratio: 1 / .86; background: var(--cream); overflow: hidden; position: relative; }
 .product-image img { height: 100%; object-fit: cover; transition: transform .4s ease; width: 100%; }
 .floral-card:hover .product-image img { transform: scale(1.04); }
@@ -58,5 +92,22 @@ a { color: inherit; }
 .signature-page { min-height: 420px; }
 .signature-description { color: #cbd1c9; margin: auto; max-width: 520px; }
 .floral-footer { color: var(--muted); display: flex; font-size: 11px; justify-content: space-between; margin: auto; max-width: 1240px; padding: 24px 5vw; }
-@media (max-width: 650px) { .floral-header { padding: 19px 6vw; } .back-link { font-size: 11px; } .floral-hero { min-height: 500px; padding: 100px 8vw 75px; } .floral-hero::after { height: 260px; right: -140px; top: 250px; width: 260px; } .section-intro { align-items: start; flex-direction: column; gap: 10px; } .collections { padding-top: 75px; } .product-grid { grid-template-columns: 1fr 1fr; } .card-content { padding: 14px; } .card-content h4 { font-size: 20px; } .card-content p { font-size: 12px; } .card-bottom { align-items: start; flex-direction: column; } .floral-footer { flex-direction: column; gap: 5px; } }
-@media (max-width: 420px) { .product-grid { grid-template-columns: 1fr; } }
+
+@media (max-width: 650px) {
+    .floral-header { padding: 19px 6vw; }
+    .back-link { font-size: 11px; }
+    .floral-hero { min-height: 500px; padding: 100px 8vw 75px; }
+    .floral-hero::after { height: 260px; right: -140px; top: 250px; width: 260px; }
+    .section-intro { align-items: start; flex-direction: column; gap: 10px; }
+    .collections { padding-top: 75px; }
+    .product-grid { grid-template-columns: 1fr 1fr; }
+    .card-content { padding: 14px; }
+    .card-content h4 { font-size: 20px; }
+    .card-content p { font-size: 12px; }
+    .card-bottom { align-items: start; flex-direction: column; }
+    .floral-footer { flex-direction: column; gap: 5px; }
+}
+
+@media (max-width: 420px) {
+    .product-grid { grid-template-columns: 1fr; }
+}

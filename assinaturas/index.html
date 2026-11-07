@@ -40,21 +40,64 @@
     </main>
     <footer class="floral-footer"><span>Pétala Floricultura</span><span>© 2026 · Santana de Parnaíba</span></footer>
     <script>
-        const defaults = { kicker: 'A assinatura Pétala', title: 'Delicadeza em cada detalhe.', text: 'Do primeiro laço à última pétala, criamos presentes com intenção, beleza e o cuidado de quem conhece a força de um gesto.', name: 'Pétala', caption: 'flores para dizer o que importa' };
-        const saved = localStorage.getItem('petala_catalogo');
-        const source = saved ? Promise.resolve(JSON.parse(saved)) : fetch('../produtos.json').then(response => response.json());
-        const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
-        const imagePath = value => { const clean = String(value || '').replace(/^(\.\.\/)+/, '').replace(/^Pétala Floricultura_files\//, ''); return clean.includes('/') ? `../${clean}` : `../floricultura files/${clean}`; };
-        const formatPrice = value => typeof value === 'number' ? value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : 'Sob consulta';
+        const defaults = {
+            kicker: 'A assinatura Pétala',
+            title: 'Delicadeza em cada detalhe.',
+            text: 'Do primeiro laço à última pétala, criamos presentes com intenção, beleza e o cuidado de quem conhece a força de um gesto.',
+            name: 'Pétala',
+            caption: 'flores para dizer o que importa'
+        };
+        const saved = location.protocol === 'file:' ? localStorage.getItem('petala_catalogo') : null;
+        const source = saved
+            ? Promise.resolve(JSON.parse(saved))
+            : fetch(`../produtos.json?v=${Date.now()}`).then(response => {
+                if (!response.ok) throw new Error(`Não foi possível carregar as assinaturas: ${response.status}`);
+                return response.json();
+            });
+
+        function escapeHtml(value) {
+            const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+            return String(value ?? '').replace(/[&<>'"]/g, character => entities[character]);
+        }
+
+        function imagePath(value) {
+            const clean = String(value || '')
+                .replace(/^(\.\.\/)+/, '')
+                .replace(/^Pétala Floricultura_files\//, '');
+            return clean.includes('/') ? `../${clean}` : `../floricultura files/${clean}`;
+        }
+
+        function formatPrice(value) {
+            if (typeof value !== 'number') return 'Sob consulta';
+            return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+
         function renderSignatures(catalog) {
             const signatures = Array.isArray(catalog.assinaturas) ? catalog.assinaturas : [];
             const target = document.getElementById('signature-list');
-            target.innerHTML = signatures.length ? signatures.map(signature => {
-                const image = signature.imagens?.[0] ? `<img src="${imagePath(signature.imagens[0])}" alt="${escapeHtml(signature.titulo)}" loading="lazy" onerror="this.closest('.product-image').classList.add('empty')">` : '';
+            target.innerHTML = signatures.length ? signatures.map((signature) => {
+                const image = signature.imagens?.[0]
+                    ? `<img src="${imagePath(signature.imagens[0])}" alt="${escapeHtml(signature.titulo)}" loading="lazy" onerror="this.closest('.product-image').classList.add('empty')">`
+                    : '';
                 const message = encodeURIComponent(`Olá, gostaria de conhecer a assinatura: ${signature.titulo || 'Assinatura floral'}`);
-                return `<article class="floral-card"><div class="product-image">${image}<span class="image-fallback">Pétala</span></div><div class="card-content"><h4>${escapeHtml(signature.titulo || 'Assinatura floral')}</h4><p>${escapeHtml(signature.descricao || '')}</p><div class="card-bottom"><strong>${formatPrice(signature.preco)}</strong><a href="https://wa.me/5511955506889?text=${message}" target="_blank" rel="noreferrer">Conhecer</a></div></div></article>`;
+                return `
+                    <article class="floral-card">
+                        <div class="product-image">
+                            ${image}
+                            <span class="image-fallback">Pétala</span>
+                        </div>
+                        <div class="card-content">
+                            <h4>${escapeHtml(signature.titulo || 'Assinatura floral')}</h4>
+                            <p>${escapeHtml(signature.descricao || '')}</p>
+                            <div class="card-bottom">
+                                <strong>${formatPrice(signature.preco)}</strong>
+                                <a href="https://wa.me/5511955506889?text=${message}" target="_blank" rel="noreferrer">Conhecer</a>
+                            </div>
+                        </div>
+                    </article>`;
             }).join('') : '<p class="loading">Em breve, novas assinaturas estarão disponíveis.</p>';
         }
+
         source.then(catalog => {
             const signature = { ...defaults, ...(catalog.assinaturaFloral || {}) };
             document.getElementById('signature-kicker').textContent = signature.kicker;

@@ -130,7 +130,21 @@ function makeSiteZip(): never
         respond(['error' => 'Não foi possível criar o ZIP do site.'], 500);
     }
 
-    $excluded = ['.git', 'node_modules', '.petala-data', 'painel-servidor.log', 'painel.pin', 'package.json', 'package-lock.json', 'server.js', 'abrir-painel.sh', 'abrir-painel.bat', 'limpar-duplicadas.js', 'relatorio-imagens.md', 'settings.json'];
+    $excluded = [
+        '.git',
+        'node_modules',
+        '.petala-data',
+        'painel-servidor.log',
+        'painel.pin',
+        'package.json',
+        'package-lock.json',
+        'server.js',
+        'abrir-painel.sh',
+        'abrir-painel.bat',
+        'limpar-duplicadas.js',
+        'relatorio-imagens.md',
+        'settings.json',
+    ];
     $iterator = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS),
         RecursiveIteratorIterator::LEAVES_ONLY
@@ -231,12 +245,12 @@ try {
             if (!is_array($source) || $oldIndex === false || !isset($source[$oldIndex]) || !is_array($source[$oldIndex])) {
                 respond(['error' => 'Produto inválido.'], 400);
             }
-            $oldProduct = $source[$oldIndex];
-            array_splice($source, $oldIndex, 1);
             $sourcePath = &$catalog;
             foreach (explode('.', $oldCategory) as $key) {
                 $sourcePath = &$sourcePath[$key];
             }
+            $oldProduct = $sourcePath[$oldIndex];
+            array_splice($sourcePath, $oldIndex, 1);
             if ($operation === 'delete') {
                 removeImages($oldProduct['imagens'] ?? []);
             }
@@ -281,7 +295,7 @@ try {
                 }
                 $newImages[] = 'floricultura files/' . $filename;
             }
-            $product['imagens'] = array_values($existingImages + $newImages);
+            $product['imagens'] = array_values(array_merge($existingImages, $newImages));
             $targetPath = &$catalog;
             foreach (explode('.', $category) as $key) {
                 $targetPath = &$targetPath[$key];
@@ -294,21 +308,28 @@ try {
     if ($action === 'change-pin' && $method === 'POST') {
         $request = requestData();
         $envPin = getenv('PANEL_PIN');
+        if ($envPin !== false && $envPin !== '') {
+            respond(['error' => 'O PIN é controlado pela variável PANEL_PIN. Altere essa configuração para trocar o PIN.'], 400);
+        }
+
         $pinFile = $dataDir . '/painel.pin';
         $storedPin = is_file($pinFile) ? trim((string) file_get_contents($pinFile)) : password_hash('1234', PASSWORD_DEFAULT);
         $current = (string) ($request['current'] ?? '');
         $next = (string) ($request['next'] ?? '');
-        $valid = $envPin !== false && $envPin !== ''
-            ? hash_equals($envPin, $current)
-            : (password_verify($current, $storedPin) || (!str_starts_with($storedPin, '$') && hash_equals($storedPin, $current)));
+        $valid = password_verify($current, $storedPin)
+            || (!str_starts_with($storedPin, '$') && hash_equals($storedPin, $current));
         if (!$valid) {
             respond(['error' => 'PIN atual incorreto.'], 401);
         }
         if (strlen($next) < 4) {
             respond(['error' => 'O novo PIN precisa ter pelo menos 4 caracteres.'], 400);
         }
-        if ($envPin === false || $envPin === '') {
-            file_put_contents($pinFile, password_hash($next, PASSWORD_DEFAULT), LOCK_EX);
+
+        $temporaryPinFile = $pinFile . '.tmp';
+        $pinHash = password_hash($next, PASSWORD_DEFAULT);
+        if (file_put_contents($temporaryPinFile, $pinHash, LOCK_EX) === false || !rename($temporaryPinFile, $pinFile)) {
+            @unlink($temporaryPinFile);
+            respond(['error' => 'Não foi possível salvar o novo PIN.'], 500);
         }
         respond(['ok' => true]);
     }

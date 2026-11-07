@@ -17,6 +17,7 @@ const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 let panelPin = process.env.PANEL_PIN || '1234';
 const sessions = new Map();
+let publicationQueue = Promise.resolve();
 const app = express();
 const upload = multer({
     dest: UPLOAD_DIR,
@@ -33,9 +34,12 @@ app.get('/', (request, response) => response.redirect('/painel.html'));
 app.use(express.static(ROOT));
 
 function readCookies(request) {
-    return Object.fromEntries((request.headers.cookie || '').split(';').filter(Boolean).map((part) => {
+    const cookieHeader = request.headers.cookie || '';
+    return Object.fromEntries(cookieHeader.split(';').filter(Boolean).map((part) => {
         const separator = part.indexOf('=');
-        return [part.slice(0, separator).trim(), decodeURIComponent(part.slice(separator + 1).trim())];
+        const name = part.slice(0, separator).trim();
+        const value = decodeURIComponent(part.slice(separator + 1).trim());
+        return [name, value];
     }));
 }
 
@@ -46,29 +50,70 @@ function requireSession(request, response, next) {
 }
 
 async function readCatalog() { return JSON.parse(await fs.readFile(CATALOG_FILE, 'utf8')); }
+
+function runGit(args) {
+    return execGit('git', args, { cwd: ROOT });
+}
+
+function errorOutput(error) {
+    return String(error?.stderr || error?.stdout || error?.message || 'erro desconhecido');
+}
+
 async function publishChanges() {
     if (process.env.AUTO_PUBLISH === '0') return { ok: false, skipped: true, message: 'Publicação automática desativada.' };
     try {
-        await execGit('git', ['add', 'produtos.json', 'floricultura files'], { cwd: ROOT });
-        const staged = await execGit('git', ['diff', '--cached', '--name-only'], { cwd: ROOT });
-        const stagedFiles = String(staged?.stdout || '').trim();
+        const configuredRemotes = new Set((await runGit(['remote'])).stdout.split(/\r?\n/).filter(Boolean));
+        const requiredRemotes = ['origin', 'githubio'];
+        const missingRemotes = requiredRemotes.filter((remote) => !configuredRemotes.has(remote));
+        if (missingRemotes.length) {
+            return {
+                ok: false,
+                message: `Publicação não iniciada. Configure o(s) remoto(s): ${missingRemotes.join(', ')}.`
+            };
+        }
+
+        await runGit(['add', '--', 'produtos.json', 'floricultura files']);
+        const staged = await runGit(['diff', '--cached', '--name-only', '--', 'produtos.json', 'floricultura files']);
+        const stagedFiles = staged.stdout.trim();
         if (!stagedFiles) return { ok: true, message: 'Nenhuma alteração para publicar.' };
-        try { await execGit('git', ['commit', '-m', 'Atualiza catálogo pelo painel'], { cwd: ROOT }); }
+
+        try {
+            await runGit(['commit', '--only', '-m', 'Atualiza catálogo pelo painel', '--', 'produtos.json', 'floricultura files']);
+        }
         catch (error) {
-            const gitOutput = String(error?.stderr || error?.stdout || error?.message || '');
+            const gitOutput = errorOutput(error);
             if (!/nothing to commit/i.test(gitOutput)) throw error;
         }
-        await execGit('git', ['push', 'origin', 'main'], { cwd: ROOT });
-        try { await execGit('git', ['push', 'githubio', 'main:main'], { cwd: ROOT }); }
-        catch (error) { return { ok: false, message: `Catálogo salvo e enviado ao repositório principal, mas o site externo recusou: ${String(error?.stderr || error?.stdout || error?.message || 'erro desconhecido')}` }; }
+        await runGit(['push', 'origin', 'main']);
+        try {
+            await runGit(['push', 'githubio', 'main:main']);
+        } catch (error) {
+            return {
+                ok: false,
+                message: `Catálogo salvo e enviado ao repositório principal, mas o site externo recusou: ${errorOutput(error)}`
+            };
+        }
         return { ok: true, message: 'Catálogo publicado nos dois repositórios.' };
     } catch (error) {
-        return { ok: false, message: `Catálogo salvo, mas não pôde ser publicado: ${String(error?.stderr || error?.stdout || error?.message || 'erro desconhecido')}` };
+        return { ok: false, message: `Catálogo salvo, mas não pôde ser publicado: ${errorOutput(error)}` };
     }
 }
+
+function queuePublication() {
+    const publication = publicationQueue.then(publishChanges, publishChanges);
+    publicationQueue = publication.then(() => undefined, () => undefined);
+    return publication;
+}
+
+function setPublicationStatus(response, publication) {
+    const status = publication.skipped ? 'disabled' : publication.ok ? 'published' : 'failed';
+    response.setHeader('X-Catalog-Publication', status);
+    if (status === 'failed') console.error(publication.message);
+}
+
 async function writeCatalog(catalog) {
     await fs.writeFile(CATALOG_FILE, `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
-    publishChanges().catch(() => {});
+    return queuePublication();
 }
 function getCategory(catalog, category) { return category.split('.').reduce((value, key) => value && value[key], catalog); }
 function safeFileName(originalName) {
@@ -106,7 +151,8 @@ app.post('/api/logout', requireSession, (request, response) => {
 
 app.get('/api/catalog', requireSession, async (request, response) => response.json(await readCatalog()));
 app.put('/api/catalog', requireSession, async (request, response) => {
-    await writeCatalog(request.body);
+    const publication = await writeCatalog(request.body);
+    setPublicationStatus(response, publication);
     response.json(request.body);
 });
 app.post('/api/category', requireSession, async (request, response) => {
@@ -115,7 +161,8 @@ app.post('/api/category', requireSession, async (request, response) => {
     const catalog = await readCatalog();
     if (Object.prototype.hasOwnProperty.call(catalog, category)) return response.status(409).json({ error: 'Essa lista já existe.' });
     catalog[category] = [];
-    await writeCatalog(catalog);
+    const publication = await writeCatalog(catalog);
+    setPublicationStatus(response, publication);
     response.json(catalog);
 });
 
@@ -150,11 +197,12 @@ app.post('/api/product', requireSession, upload.array('images'), async (request,
         product.imagens = existingImages.concat(newImages);
         target.push(product);
     }
-    await writeCatalog(catalog);
+    const publication = await writeCatalog(catalog);
+    setPublicationStatus(response, publication);
     response.json(catalog);
 });
 
-app.post('/api/publish', requireSession, async (request, response) => response.json(await publishChanges()));
+app.post('/api/publish', requireSession, async (request, response) => response.json(await queuePublication()));
 app.post('/api/convert-images', requireSession, async (request, response) => {
     try {
         const catalog = await readCatalog();
@@ -173,17 +221,33 @@ app.post('/api/convert-images', requireSession, async (request, response) => {
             if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, child]) => [key, replaceReferences(child)]));
             return typeof value === 'string' ? value.replace(/\.(jpg|jpeg|png|gif)$/i, '.webp') : value;
         };
-        await writeCatalog(replaceReferences(catalog));
+        const publication = await writeCatalog(replaceReferences(catalog));
+        setPublicationStatus(response, publication);
         response.json({ ok: true, converted, message: `${converted} imagem(ns) convertida(s) para WebP.` });
     } catch (error) {
         response.status(500).json({ ok: false, error: error.message });
     }
 });
-app.post('/api/change-pin', requireSession, (request, response) => {
-    if (request.body.current !== panelPin) return response.status(401).json({ error: 'PIN atual incorreto.' });
-    if (!request.body.next || String(request.body.next).length < 4) return response.status(400).json({ error: 'O novo PIN precisa ter pelo menos 4 caracteres.' });
-    panelPin = String(request.body.next);
-    fs.writeFile(PIN_FILE, panelPin, 'utf8').catch(() => {});
+app.post('/api/change-pin', requireSession, async (request, response) => {
+    if (process.env.PANEL_PIN) {
+        return response.status(400).json({ error: 'O PIN é controlado pela variável PANEL_PIN. Altere essa configuração para trocar o PIN.' });
+    }
+    if (request.body.current !== panelPin) {
+        return response.status(401).json({ error: 'PIN atual incorreto.' });
+    }
+
+    const nextPin = String(request.body.next || '');
+    if (nextPin.length < 4) {
+        return response.status(400).json({ error: 'O novo PIN precisa ter pelo menos 4 caracteres.' });
+    }
+
+    try {
+        await fs.writeFile(PIN_FILE, nextPin, { encoding: 'utf8', mode: 0o600 });
+    } catch {
+        return response.status(500).json({ error: 'Não foi possível salvar o novo PIN.' });
+    }
+
+    panelPin = nextPin;
     response.json({ ok: true });
 });
 
