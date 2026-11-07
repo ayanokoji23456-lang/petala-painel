@@ -142,6 +142,10 @@ app.post('/api/login', async (request, response) => {
     response.setHeader('Set-Cookie', `petala_session=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=28800`);
     response.json({ ok: true });
 });
+app.get('/api/status', (request, response) => {
+    response.set('Cache-Control', 'no-store');
+    response.json({ backend: 'node' });
+});
 
 app.post('/api/logout', requireSession, (request, response) => {
     sessions.delete(readCookies(request).petala_session);

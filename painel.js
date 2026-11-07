@@ -3,7 +3,7 @@ const PIN_KEY = 'petala_painel_pin';
 const CHECK_KEY = 'petala_checklist';
 const DEFAULT_PIN = '1234';
 const BACKEND_MODE = location.protocol !== 'file:';
-const NODE_MODE = BACKEND_MODE && (location.port === '3000' || ['localhost', '127.0.0.1'].includes(location.hostname));
+let NODE_MODE = BACKEND_MODE && (location.port === '3000' || ['localhost', '127.0.0.1'].includes(location.hostname));
 const DEFAULT_SIGNATURE = { kicker: 'A assinatura Pétala', title: 'Delicadeza em cada detalhe.', text: 'Do primeiro laço à última pétala, criamos presentes com intenção, beleza e o cuidado de quem conhece a força de um gesto.', name: 'Pétala', caption: 'flores para dizer o que importa' };
 let catalog = {};
 let editingImages = [];
@@ -12,6 +12,19 @@ let pendingImageFiles = [];
 const $ = (selector) => document.querySelector(selector);
 
 function apiUrl(action) { return NODE_MODE ? `/api/${action}` : `api.php?action=${encodeURIComponent(action)}`; }
+
+async function detectBackendMode() {
+    if (!BACKEND_MODE || NODE_MODE) return;
+
+    try {
+        const response = await fetch('/api/status', { cache: 'no-store' });
+        if (!response.ok) return;
+        const configuration = await response.json();
+        NODE_MODE = configuration.backend === 'node';
+    } catch {
+        NODE_MODE = false;
+    }
+}
 
 function ensureCategoryPath(path) {
     const keys = path.split('.').filter(Boolean);
@@ -480,6 +493,7 @@ async function changePin() {
 function setup() {
     $('#login-form').addEventListener('submit', async (event) => {
         event.preventDefault();
+        await detectBackendMode();
         const pin = $('#login-pin').value;
 
         if (BACKEND_MODE) {
@@ -489,7 +503,10 @@ function setup() {
                 body: JSON.stringify({ pin })
             });
             if (!response.ok) {
-                $('#login-error').textContent = 'PIN incorreto.';
+                const result = await response.json().catch(() => ({}));
+                $('#login-error').textContent = response.status === 401
+                    ? 'PIN incorreto.'
+                    : result.error || 'Não foi possível conectar à API do painel.';
                 return;
             }
         } else if (pin !== (localStorage.getItem(PIN_KEY) || DEFAULT_PIN)) {

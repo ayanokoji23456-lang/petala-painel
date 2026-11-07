@@ -183,8 +183,14 @@ try {
         $pinFile = $dataDir . '/painel.pin';
         $storedPin = is_file($pinFile) ? trim((string) file_get_contents($pinFile)) : '';
         if ($storedPin === '' && ($envPin === false || $envPin === '')) {
-            $storedPin = password_hash('1234', PASSWORD_DEFAULT);
-            file_put_contents($pinFile, $storedPin, LOCK_EX);
+            $plainPinFile = $root . '/painel.pin';
+            $initialPin = is_file($plainPinFile) ? trim((string) file_get_contents($plainPinFile)) : '';
+            $storedPin = password_hash($initialPin !== '' ? $initialPin : '1234', PASSWORD_DEFAULT);
+            $temporaryPinFile = $pinFile . '.tmp';
+            if (file_put_contents($temporaryPinFile, $storedPin, LOCK_EX) === false || !rename($temporaryPinFile, $pinFile)) {
+                @unlink($temporaryPinFile);
+                throw new RuntimeException('Não foi possível inicializar o PIN do painel.');
+            }
         }
         $pin = (string) ($request['pin'] ?? '');
         $valid = $envPin !== false && $envPin !== ''
@@ -325,9 +331,19 @@ try {
             respond(['error' => 'O novo PIN precisa ter pelo menos 4 caracteres.'], 400);
         }
 
+        $plainPinFile = $root . '/painel.pin';
         $temporaryPinFile = $pinFile . '.tmp';
+        $temporaryPlainPinFile = $plainPinFile . '.tmp';
         $pinHash = password_hash($next, PASSWORD_DEFAULT);
-        if (file_put_contents($temporaryPinFile, $pinHash, LOCK_EX) === false || !rename($temporaryPinFile, $pinFile)) {
+        if (file_put_contents($temporaryPinFile, $pinHash, LOCK_EX) === false
+            || file_put_contents($temporaryPlainPinFile, $next, LOCK_EX) === false
+            || !rename($temporaryPlainPinFile, $plainPinFile)) {
+            @unlink($temporaryPinFile);
+            @unlink($temporaryPlainPinFile);
+            respond(['error' => 'Não foi possível salvar o novo PIN.'], 500);
+        }
+        if (!rename($temporaryPinFile, $pinFile)) {
+            file_put_contents($plainPinFile, $current, LOCK_EX);
             @unlink($temporaryPinFile);
             respond(['error' => 'Não foi possível salvar o novo PIN.'], 500);
         }

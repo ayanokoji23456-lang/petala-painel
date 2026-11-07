@@ -6,6 +6,7 @@ RewriteRule ^painel\.js$ - [F,L]
 RewriteRule ^painel\.css$ - [F,L]
 RewriteRule ^api\.php$ - [F,L]
 RewriteRule ^exportar-site\.php$ - [F,L]
+RewriteRule ^painel\.pin$ - [F,L]
 
 # Mantém a página pública como entrada principal do cliente
 DirectoryIndex index.html
