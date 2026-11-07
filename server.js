@@ -13,6 +13,29 @@ const ROOT = __dirname;
 const CATALOG_FILE = path.join(ROOT, 'produtos.json');
 const UPLOAD_DIR = path.join(ROOT, 'floricultura files');
 const PIN_FILE = path.join(ROOT, 'painel.pin');
+const PUBLIC_SITE_EXCLUDED = new Set([
+    '.git',
+    '.petala-data',
+    'node_modules',
+    'vendor',
+    'db.sqlite',
+    'painel-servidor.log',
+    'painel.pin',
+    'package.json',
+    'package-lock.json',
+    'server.js',
+    'painel.html',
+    'painel.css',
+    'painel.js',
+    'api.php',
+    'exportar-site.php',
+    '.htaccess',
+    'abrir-painel.sh',
+    'abrir-painel.bat',
+    'limpar-duplicadas.js',
+    'relatorio-imagens.md',
+    'settings.json'
+]);
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = process.env.HOST || '0.0.0.0';
 let panelPin = process.env.PANEL_PIN || '1234';
@@ -55,8 +78,60 @@ function runGit(args) {
     return execGit('git', args, { cwd: ROOT });
 }
 
+function runGitAt(directory, args) {
+    return execGit('git', args, { cwd: directory });
+}
+
 function errorOutput(error) {
     return String(error?.stderr || error?.stdout || error?.message || 'erro desconhecido');
+}
+
+function isPublicSitePath(relativePath) {
+    const segments = relativePath.split(path.sep).filter(Boolean);
+    return segments.every((segment) =>
+        !PUBLIC_SITE_EXCLUDED.has(segment) && !segment.startsWith('.petala-site-export-')
+    );
+}
+
+async function syncPublicSite(destination) {
+    for (const entry of await fs.readdir(destination, { withFileTypes: true })) {
+        if (['.git', 'CNAME', '.nojekyll'].includes(entry.name)) continue;
+        await fs.rm(path.join(destination, entry.name), { recursive: true, force: true });
+    }
+
+    for (const entry of await fs.readdir(ROOT, { withFileTypes: true })) {
+        if (!isPublicSitePath(entry.name)) continue;
+        await fs.cp(path.join(ROOT, entry.name), path.join(destination, entry.name), {
+            recursive: true,
+            filter: (sourcePath) => isPublicSitePath(path.relative(ROOT, sourcePath))
+        });
+    }
+}
+
+async function publishStaticSite(remoteUrl) {
+    const temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'petala-pages-'));
+    const siteDirectory = path.join(temporaryDirectory, 'site');
+
+    try {
+        await runGit(['clone', '--branch', 'main', '--single-branch', remoteUrl, siteDirectory]);
+        await syncPublicSite(siteDirectory);
+
+        const changes = await runGitAt(siteDirectory, ['status', '--porcelain']);
+        if (!changes.stdout.trim()) {
+            return { ok: true, message: 'O site já estava atualizado.' };
+        }
+
+        await runGitAt(siteDirectory, ['config', 'user.name', 'Pétala Painel']);
+        await runGitAt(siteDirectory, ['config', 'user.email', 'painel@petala.local']);
+        await runGitAt(siteDirectory, ['add', '--all']);
+        await runGitAt(siteDirectory, ['commit', '-m', 'Atualiza site pelo painel']);
+        await runGitAt(siteDirectory, ['push', 'origin', 'main']);
+        return { ok: true, message: 'Site estático publicado no repositório do site.' };
+    } catch (error) {
+        return { ok: false, message: `Não foi possível publicar o site estático: ${errorOutput(error)}` };
+    } finally {
+        await fs.rm(temporaryDirectory, { recursive: true, force: true });
+    }
 }
 
 async function publishChanges() {
@@ -75,25 +150,21 @@ async function publishChanges() {
         await runGit(['add', '--', 'produtos.json', 'floricultura files']);
         const staged = await runGit(['diff', '--cached', '--name-only', '--', 'produtos.json', 'floricultura files']);
         const stagedFiles = staged.stdout.trim();
-        if (!stagedFiles) return { ok: true, message: 'Nenhuma alteração para publicar.' };
 
-        try {
-            await runGit(['commit', '--only', '-m', 'Atualiza catálogo pelo painel', '--', 'produtos.json', 'floricultura files']);
+        if (stagedFiles) {
+            await runGit([
+                '-c', 'user.name=Pétala Painel',
+                '-c', 'user.email=painel@petala.local',
+                'commit', '--only', '-m', 'Atualiza catálogo pelo painel',
+                '--', 'produtos.json', 'floricultura files'
+            ]);
+            await runGit(['push', 'origin', 'main']);
         }
-        catch (error) {
-            const gitOutput = errorOutput(error);
-            if (!/nothing to commit/i.test(gitOutput)) throw error;
-        }
-        await runGit(['push', 'origin', 'main']);
-        try {
-            await runGit(['push', 'githubio', 'main:main']);
-        } catch (error) {
-            return {
-                ok: false,
-                message: `Catálogo salvo e enviado ao repositório principal, mas o site externo recusou: ${errorOutput(error)}`
-            };
-        }
-        return { ok: true, message: 'Catálogo publicado nos dois repositórios.' };
+
+        const siteRemote = (await runGit(['remote', 'get-url', 'githubio'])).stdout.trim();
+        const sitePublication = await publishStaticSite(siteRemote);
+        if (!sitePublication.ok) return sitePublication;
+        return { ok: true, message: sitePublication.message };
     } catch (error) {
         return { ok: false, message: `Catálogo salvo, mas não pôde ser publicado: ${errorOutput(error)}` };
     }

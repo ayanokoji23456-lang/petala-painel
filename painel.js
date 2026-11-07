@@ -358,12 +358,12 @@ function loadChecklist() {
 }
 
 async function downloadSite() {
-    if (!BACKEND_MODE || NODE_MODE) {
-        showStatus('O ZIP completo fica disponível no painel hospedado na Hostinger.');
+    if (!BACKEND_MODE) {
+        showStatus('O download fica disponível quando o painel está hospedado.');
         return;
     }
 
-    const response = await fetch('exportar-site.php');
+    const response = await fetch(apiUrl('download-site'));
     if (!response.ok) {
         const result = await response.json().catch(() => ({}));
         showStatus(result.error || 'Não foi possível gerar o ZIP do site.');
@@ -379,6 +379,18 @@ async function downloadSite() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     document.querySelector('[data-check="publish"]').checked = false;
     showStatus('ZIP completo do site baixado.');
+}
+
+async function publishSite() {
+    const response = await fetch(apiUrl('publish'), { method: 'POST' });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok) {
+        showStatus(result.message || result.error || 'Não foi possível publicar o site.');
+        return;
+    }
+
+    document.querySelector('[data-check="publish"]').checked = false;
+    showStatus(result.message || 'Site publicado.');
 }
 
 function importCatalog(file) {
@@ -490,7 +502,9 @@ async function changePin() {
     window.alert('PIN alterado com sucesso.');
 }
 
-function setup() {
+async function setup() {
+    await detectBackendMode();
+
     $('#login-form').addEventListener('submit', async (event) => {
         event.preventDefault();
         await detectBackendMode();
@@ -560,12 +574,14 @@ function setup() {
 
     document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeEditor(); });
 
-    const download = document.createElement('button');
-    download.className = 'button button-primary';
-    download.textContent = 'Baixar site atualizado';
-    download.type = 'button';
-    download.addEventListener('click', downloadSite);
-    $('.intro-row').append(download);
+    if (BACKEND_MODE) {
+        const siteAction = document.createElement('button');
+        siteAction.className = 'button button-primary';
+        siteAction.textContent = NODE_MODE ? 'Publicar site atualizado' : 'Baixar site atualizado';
+        siteAction.type = 'button';
+        siteAction.addEventListener('click', NODE_MODE ? publishSite : downloadSite);
+        $('.intro-row').append(siteAction);
+    }
 
     const importLabel = document.createElement('label');
     importLabel.className = 'button button-quiet';
@@ -579,24 +595,6 @@ function setup() {
     $('.intro-row').append(importLabel);
 
     if (NODE_MODE) {
-        const publish = document.createElement('button');
-        publish.className = 'button button-primary';
-        publish.textContent = 'Publicar agora';
-        publish.type = 'button';
-        publish.addEventListener('click', async () => {
-            publish.disabled = true;
-            try {
-                const response = await fetch(apiUrl('publish'), { method: 'POST' });
-                const result = await response.json().catch(() => ({}));
-                showStatus(String(result?.message || (result?.ok ? 'Publicação concluída.' : 'Falha na publicação.')));
-            } catch (error) {
-                showStatus(`Falha ao publicar: ${String(error?.message || error || 'erro desconhecido')}`);
-            } finally {
-                publish.disabled = false;
-            }
-        });
-        $('.intro-row').append(publish);
-
         const convertExisting = document.createElement('button');
         convertExisting.className = 'button button-quiet';
         convertExisting.textContent = 'Converter imagens existentes';
@@ -615,4 +613,6 @@ function setup() {
     }
 }
 
-setup();
+setup().catch((error) => {
+    $('#login-error').textContent = `Não foi possível iniciar o painel: ${error.message}`;
+});
