@@ -82,8 +82,16 @@ function runGitAt(directory, args) {
     return execGit('git', args, { cwd: directory });
 }
 
+function commandOutput(result) {
+    const output = result?.stdout;
+    if (Buffer.isBuffer(output)) return output.toString('utf8');
+    return typeof output === 'string' ? output : '';
+}
+
 function errorOutput(error) {
-    return String(error?.stderr || error?.stdout || error?.message || 'erro desconhecido');
+    const output = error?.stderr || error?.stdout || error?.message;
+    if (Buffer.isBuffer(output)) return output.toString('utf8');
+    return String(output || 'erro desconhecido');
 }
 
 function isPublicSitePath(relativePath) {
@@ -117,7 +125,7 @@ async function publishStaticSite(remoteUrl) {
         await syncPublicSite(siteDirectory);
 
         const changes = await runGitAt(siteDirectory, ['status', '--porcelain']);
-        if (!changes.stdout.trim()) {
+        if (!commandOutput(changes).trim()) {
             return { ok: true, message: 'O site já estava atualizado.' };
         }
 
@@ -137,7 +145,7 @@ async function publishStaticSite(remoteUrl) {
 async function publishChanges() {
     if (process.env.AUTO_PUBLISH === '0') return { ok: false, skipped: true, message: 'Publicação automática desativada.' };
     try {
-        const configuredRemotes = new Set((await runGit(['remote'])).stdout.split(/\r?\n/).filter(Boolean));
+        const configuredRemotes = new Set(commandOutput(await runGit(['remote'])).split(/\r?\n/).filter(Boolean));
         const requiredRemotes = ['origin', 'githubio'];
         const missingRemotes = requiredRemotes.filter((remote) => !configuredRemotes.has(remote));
         if (missingRemotes.length) {
@@ -149,7 +157,7 @@ async function publishChanges() {
 
         await runGit(['add', '--', 'produtos.json', 'floricultura files']);
         const staged = await runGit(['diff', '--cached', '--name-only', '--', 'produtos.json', 'floricultura files']);
-        const stagedFiles = staged.stdout.trim();
+        const stagedFiles = commandOutput(staged).trim();
 
         if (stagedFiles) {
             await runGit([
@@ -161,7 +169,7 @@ async function publishChanges() {
             await runGit(['push', 'origin', 'main']);
         }
 
-        const siteRemote = (await runGit(['remote', 'get-url', 'githubio'])).stdout.trim();
+        const siteRemote = commandOutput(await runGit(['remote', 'get-url', 'githubio'])).trim();
         const sitePublication = await publishStaticSite(siteRemote);
         if (!sitePublication.ok) return sitePublication;
         return { ok: true, message: sitePublication.message };
