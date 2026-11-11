@@ -101,6 +101,119 @@ function isPublicSitePath(relativePath) {
     );
 }
 
+function getGitHubTargetConfig() {
+    return {
+        token: process.env.GITHUB_TOKEN || '',
+        originRepo: process.env.GITHUB_REPO || 'ayanokoji23456-lang/petala-painel',
+        siteRepo: process.env.GITHUB_SITE_REPO || 'ayanokoji23456-lang/ayanokoji23456-lang.github.io',
+        branch: process.env.GITHUB_BRANCH || 'main'
+    };
+}
+
+async function hasGitRepository() {
+    try {
+        await fs.access(path.join(ROOT, '.git'));
+        return true;
+    } catch {
+        return false;
+    }
+}
+
+async function githubRequest(endpoint, init = {}) {
+    const { token } = getGitHubTargetConfig();
+    if (!token) throw new Error('Token do GitHub não configurado.');
+
+    const response = await fetch(`https://api.github.com${endpoint}`, {
+        ...init,
+        headers: {
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            'User-Agent': 'petala-painel',
+            Authorization: `Bearer ${token}`,
+            ...(init.headers || {})
+        }
+    });
+
+    const text = await response.text();
+    if (!response.ok) {
+        let message = 'Erro na API do GitHub.';
+        try {
+            const payload = JSON.parse(text);
+            if (payload?.message) message = payload.message;
+        } catch {
+            if (text) message = text;
+        }
+        throw new Error(message || `GitHub API falhou (${response.status})`);
+    }
+
+    return text ? JSON.parse(text) : null;
+}
+
+async function githubGetFileSha(repoName, relativePath, branch) {
+    try {
+        const file = await githubRequest(`/repos/${repoName}/contents/${relativePath}?ref=${encodeURIComponent(branch)}`);
+        return file?.sha || null;
+    } catch (error) {
+        const message = String(error.message || '');
+        if (message.includes('Not Found') || message.includes('404')) return null;
+        throw error;
+    }
+}
+
+async function upsertGithubFile(repoName, relativePath, sourceFilePath, branch, message) {
+    const content = await fs.readFile(sourceFilePath);
+    const base64 = Buffer.from(content).toString('base64');
+    const sha = await githubGetFileSha(repoName, relativePath, branch);
+
+    const payload = {
+        message,
+        content: base64,
+        branch
+    };
+    if (sha) payload.sha = sha;
+
+    await githubRequest(`/repos/${repoName}/contents/${relativePath}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' }
+    });
+}
+
+async function collectPublicFiles(directory, rootDirectory = directory) {
+    const files = [];
+    const entries = await fs.readdir(directory, { withFileTypes: true });
+    for (const entry of entries) {
+        if (entry.name === '.git' || entry.name === '.petala-data') continue;
+        const fullPath = path.join(directory, entry.name);
+        const relativePath = path.relative(rootDirectory, fullPath).split(path.sep).join('/');
+        if (entry.isDirectory()) {
+            if (!isPublicSitePath(relativePath)) continue;
+            files.push(...await collectPublicFiles(fullPath, rootDirectory));
+            continue;
+        }
+        if (!isPublicSitePath(relativePath)) continue;
+        if (PUBLIC_SITE_EXCLUDED.has(entry.name)) continue;
+        files.push({ fullPath, relativePath });
+    }
+    return files;
+}
+
+async function publishCatalogWithGitHubApi() {
+    const { originRepo, branch } = getGitHubTargetConfig();
+    await upsertGithubFile(originRepo, 'produtos.json', CATALOG_FILE, branch, 'Atualiza catálogo pelo painel');
+    return { ok: true, message: 'Catálogo salvo e publicado no GitHub.' };
+}
+
+async function publishStaticSiteWithGitHubApi() {
+    const { siteRepo, branch } = getGitHubTargetConfig();
+    const publicFiles = await collectPublicFiles(ROOT);
+    for (const { fullPath, relativePath } of publicFiles) {
+        if (relativePath === 'produtos.json') continue;
+        await upsertGithubFile(siteRepo, relativePath, fullPath, branch, 'Atualiza site pelo painel');
+    }
+    return { ok: true, message: 'Site estático publicado no repositório do GitHub Pages.' };
+}
+
 async function syncPublicSite(destination) {
     for (const entry of await fs.readdir(destination, { withFileTypes: true })) {
         if (['.git', 'CNAME', '.nojekyll'].includes(entry.name)) continue;
@@ -144,15 +257,41 @@ async function publishStaticSite(remoteUrl) {
 
 async function publishChanges() {
     if (process.env.AUTO_PUBLISH === '0') return { ok: false, skipped: true, message: 'Publicação automática desativada.' };
+
+    const gitRepositoryAvailable = await hasGitRepository();
+    const githubConfigured = Boolean(process.env.GITHUB_TOKEN && process.env.GITHUB_REPO && process.env.GITHUB_SITE_REPO);
+
+    if (!gitRepositoryAvailable && !githubConfigured) {
+        return {
+            ok: false,
+            message: 'Publicação não iniciada. Configure o(s) remoto(s): origin, githubio.'
+        };
+    }
+
     try {
+        if (!gitRepositoryAvailable && githubConfigured) {
+            const catalogPublication = await publishCatalogWithGitHubApi();
+            if (!catalogPublication.ok) return catalogPublication;
+            const sitePublication = await publishStaticSiteWithGitHubApi();
+            if (!sitePublication.ok) return sitePublication;
+            return { ok: true, message: sitePublication.message };
+        }
+
         const configuredRemotes = new Set(commandOutput(await runGit(['remote'])).split(/\r?\n/).filter(Boolean));
         const requiredRemotes = ['origin', 'githubio'];
         const missingRemotes = requiredRemotes.filter((remote) => !configuredRemotes.has(remote));
         if (missingRemotes.length) {
-            return {
-                ok: false,
-                message: `Publicação não iniciada. Configure o(s) remoto(s): ${missingRemotes.join(', ')}.`
-            };
+            if (!githubConfigured) {
+                return {
+                    ok: false,
+                    message: `Publicação não iniciada. Configure o(s) remoto(s): ${missingRemotes.join(', ')}.`
+                };
+            }
+            const catalogPublication = await publishCatalogWithGitHubApi();
+            if (!catalogPublication.ok) return catalogPublication;
+            const sitePublication = await publishStaticSiteWithGitHubApi();
+            if (!sitePublication.ok) return sitePublication;
+            return { ok: true, message: sitePublication.message };
         }
 
         await runGit(['add', '--', 'produtos.json', 'floricultura files']);
