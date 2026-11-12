@@ -2,20 +2,6 @@
   "buques": {
     "noivas": [
       {
-        "titulo": "Mini Buquê de Astromélias",
-        "descricao": "Mini buquê de mão. Buquê de astromélias, mosquitinho e finalizado com fita de cetim. (Opção para fotos e casamento no civil).",
-        "preco": 35,
-        "imagens": [
-          "floricultura files/1793732476995-ee030dc743.webp",
-          "floricultura files/1793732476995-5e513c98e1.webp",
-          "floricultura files/1793732476995-bb589eb63e.webp",
-          "floricultura files/1793732476995-5072658bb6.webp",
-          "floricultura files/1793732476995-0f8fc2eb69.webp",
-          "floricultura files/1793732476995-f33104f830.webp",
-          "floricultura files/1793732476995-e9597b2341.webp"
-        ]
-      },
-      {
         "titulo": "Buquê de Astromélia",
         "descricao": "Buquê de astromélias, fantasia ou mosquitinho e finalizado com fita de cetim.",
         "preco": 45,
@@ -87,6 +73,20 @@
         "imagens": [
           "floricultura files/1793733812879-56f5047644.webp",
           "floricultura files/1793733812879-b9cf00cdd8.webp"
+        ]
+      },
+      {
+        "titulo": "Mini Buquê de Astromélia",
+        "descricao": "Mini buquê de mão. Buquê de astromélias, mosquitinho e finalizado com fita de cetim. (Opção para fotos e casamento no civil).",
+        "preco": 35,
+        "imagens": [
+          "floricultura files/1793732476995-ee030dc743.webp",
+          "floricultura files/1793732476995-5e513c98e1.webp",
+          "floricultura files/1793732476995-bb589eb63e.webp",
+          "floricultura files/1793732476995-5072658bb6.webp",
+          "floricultura files/1793732476995-0f8fc2eb69.webp",
+          "floricultura files/1793732476995-f33104f830.webp",
+          "floricultura files/1793732476995-e9597b2341.webp"
         ]
       }
     ],
