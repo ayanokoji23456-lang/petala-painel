@@ -644,14 +644,6 @@
   },
   "cestas": [
     {
-      "titulo": "Caixa de Flores Mistas com Vinho ou Espumante",
-      "descricao": "Arranjo de flores mistas na caixa cartonada com adicional de espumante ou vinho, embrulho decorativo e laço de cetim.",
-      "preco": null,
-      "imagens": [
-        "floricultura files/cxvi.webp"
-      ]
-    },
-    {
       "titulo": "Mini café da manhã",
       "descricao": "Cesta contém: suco, bolinho, geleia, açúcar, xícara de porcelana com pires e colher, chá, adoçante, biscoito e suculenta.",
       "preco": 65,
@@ -844,6 +836,14 @@
         "floricultura files/1790607758515-7d6801144b.webp",
         "floricultura files/1793039432016-54a4986250.webp",
         "floricultura files/1793039432017-d4be8ce4a3.webp"
+      ]
+    },
+    {
+      "titulo": "Arranjo de Flores Mistas com Vinho ou Espumante",
+      "descricao": "Arranjo de flores mistas na caixa cartonada com adicional de espumante ou vinho, embrulho decorativo e laço de cetim.",
+      "preco": null,
+      "imagens": [
+        "floricultura files/cxvi.webp"
       ]
     }
   ],
