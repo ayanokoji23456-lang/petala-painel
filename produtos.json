@@ -903,6 +903,12 @@
         "b03.webp",
         "b04.webp"
       ]
+    },
+    {
+      "titulo": "Balão-teste",
+      "descricao": "é apenas um teste do funcionamento do site",
+      "preco": 998.98,
+      "imagens": []
     }
   ],
   "plantas": [
