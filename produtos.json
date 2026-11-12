@@ -279,18 +279,6 @@
         ]
       },
       {
-        "titulo": "Buquê de Rosas, Astromélias e Gérberas",
-        "descricao": "...",
-        "preco": 70,
-        "imagens": [
-          "floricultura files/astroge3.webp",
-          "floricultura files/astroge2.webp",
-          "floricultura files/astroge1.webp",
-          "floricultura files/astroge4.webp",
-          "floricultura files/astroge5.webp"
-        ]
-      },
-      {
         "titulo": "Buquê gérbera e astromelia",
         "descricao": "...",
         "preco": 48,
@@ -494,6 +482,18 @@
         "imagens": [
           "floricultura files/pl.webp",
           "floricultura files/pl2.webp"
+        ]
+      },
+      {
+        "titulo": "Buquê de Rosas, Astromélias e Gérberas",
+        "descricao": "...",
+        "preco": 70,
+        "imagens": [
+          "floricultura files/astroge3.webp",
+          "floricultura files/astroge2.webp",
+          "floricultura files/astroge1.webp",
+          "floricultura files/astroge4.webp",
+          "floricultura files/astroge5.webp"
         ]
       }
     ],
