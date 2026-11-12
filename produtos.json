@@ -31,15 +31,6 @@
         ]
       },
       {
-        "titulo": "Buquê de Rosas e Astromélias",
-        "descricao": "Buquê com 18 rosas, astromélias e finalizado com fita de cetim.",
-        "preco": 170,
-        "imagens": [
-          "floricultura files/1793732841155-c4600092ba.webp",
-          "floricultura files/1793732841156-55c88b34ba.webp"
-        ]
-      },
-      {
         "titulo": "Buquê de Rosas com ruscus",
         "descricao": "Buquê com rosas brancas, ruscus, mosquitinho e finalizado com fita de cetim.",
         "preco": 180,
@@ -87,6 +78,15 @@
           "floricultura files/1793732476995-0f8fc2eb69.webp",
           "floricultura files/1793732476995-f33104f830.webp",
           "floricultura files/1793732476995-e9597b2341.webp"
+        ]
+      },
+      {
+        "titulo": "Buquê de Rosas e Astromélia",
+        "descricao": "Buquê com 18 rosas, astromélias e finalizado com fita de cetim.",
+        "preco": 170,
+        "imagens": [
+          "floricultura files/1793732841155-c4600092ba.webp",
+          "floricultura files/1793732841156-55c88b34ba.webp"
         ]
       }
     ],
