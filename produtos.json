@@ -2,16 +2,6 @@
   "buques": {
     "noivas": [
       {
-        "titulo": "Buquê de Callas",
-        "descricao": "Buquê de calas ou copo de leite e finalizado com fita de cetim.",
-        "preco": 90,
-        "imagens": [
-          "floricultura files/1793732689684-3a13eecbab.webp",
-          "floricultura files/1793732689685-714a99e5c6.webp",
-          "floricultura files/1793732689685-ec3ee3d046.webp"
-        ]
-      },
-      {
         "titulo": "Buquê de Lírio Dobrado",
         "descricao": "Buquê de lírio dobrado e finalizado com fita de cetim.",
         "preco": 140,
@@ -87,6 +77,16 @@
         "imagens": [
           "floricultura files/1793732841155-c4600092ba.webp",
           "floricultura files/1793732841156-55c88b34ba.webp"
+        ]
+      },
+      {
+        "titulo": "Buquê de Calla",
+        "descricao": "Buquê de calas ou copo de leite e finalizado com fita de cetim.",
+        "preco": 90,
+        "imagens": [
+          "floricultura files/1793732689684-3a13eecbab.webp",
+          "floricultura files/1793732689685-714a99e5c6.webp",
+          "floricultura files/1793732689685-ec3ee3d046.webp"
         ]
       }
     ],
