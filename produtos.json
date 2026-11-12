@@ -2,15 +2,6 @@
   "buques": {
     "noivas": [
       {
-        "titulo": "Buquê de Astromélia",
-        "descricao": "Buquê de astromélias, fantasia ou mosquitinho e finalizado com fita de cetim.",
-        "preco": 45,
-        "imagens": [
-          "floricultura files/1793732578708-ffbe06b0b9.webp",
-          "floricultura files/1793732578708-f1b9f8b4c8.webp"
-        ]
-      },
-      {
         "titulo": "Buquê de Callas",
         "descricao": "Buquê de calas ou copo de leite e finalizado com fita de cetim.",
         "preco": 90,
@@ -87,6 +78,15 @@
         "imagens": [
           "floricultura files/1793732841155-c4600092ba.webp",
           "floricultura files/1793732841156-55c88b34ba.webp"
+        ]
+      },
+      {
+        "titulo": "Buquê de Astromélias",
+        "descricao": "Buquê de astromélias, fantasia ou mosquitinho e finalizado com fita de cetim.",
+        "preco": 45,
+        "imagens": [
+          "floricultura files/1793732578708-ffbe06b0b9.webp",
+          "floricultura files/1793732578708-f1b9f8b4c8.webp"
         ]
       }
     ],
