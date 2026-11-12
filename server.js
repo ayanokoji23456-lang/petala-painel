@@ -329,8 +329,12 @@ function setPublicationStatus(response, publication) {
     if (status === 'failed') console.error(publication.message);
 }
 
-async function writeCatalog(catalog) {
+async function writeCatalogLocally(catalog) {
     await fs.writeFile(CATALOG_FILE, `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
+}
+
+async function writeCatalog(catalog) {
+    await writeCatalogLocally(catalog);
     return queuePublication();
 }
 function getCategory(catalog, category) { return category.split('.').reduce((value, key) => value && value[key], catalog); }
@@ -389,39 +393,50 @@ app.post('/api/category', requireSession, async (request, response) => {
 });
 
 app.post('/api/product', requireSession, upload.array('images'), async (request, response) => {
-    const catalog = await readCatalog();
-    const action = request.body.action;
-    const category = request.body.category;
-    const oldCategory = request.body.oldCategory;
-    const oldIndex = Number(request.body.oldIndex);
-    const target = getCategory(catalog, category);
-    if (!Array.isArray(target)) return response.status(400).json({ error: 'Categoria inválida.' });
+    try {
+        const catalog = await readCatalog();
+        const action = request.body.action;
+        const category = request.body.category;
+        const oldCategory = request.body.oldCategory;
+        const oldIndex = Number(request.body.oldIndex);
+        const target = getCategory(catalog, category);
+        if (!Array.isArray(target)) return response.status(400).json({ error: 'Categoria inválida.' });
 
-    if (action === 'delete' || action === 'update') {
-        const source = getCategory(catalog, oldCategory);
-        if (!Array.isArray(source) || !Number.isInteger(oldIndex) || !source[oldIndex]) return response.status(400).json({ error: 'Produto inválido.' });
-        const oldProduct = source[oldIndex];
-        source.splice(oldIndex, 1);
-        if (action === 'delete') await removeStoredImages(oldProduct.imagens || []);
-        request.oldProduct = oldProduct;
-    }
-    if (action !== 'delete') {
-        const product = JSON.parse(request.body.product);
-        const existingImages = JSON.parse(request.body.existingImages || '[]');
-        const oldProduct = request.oldProduct;
-        if (oldProduct) await removeStoredImages((oldProduct.imagens || []).filter((image) => !existingImages.includes(image)));
-        const newImages = [];
-        for (const file of request.files || []) {
-            const filename = safeFileName(file.originalname);
-            await fs.rename(file.path, path.join(UPLOAD_DIR, filename));
-            newImages.push(`floricultura files/${filename}`);
+        if (action === 'delete' || action === 'update') {
+            const source = getCategory(catalog, oldCategory);
+            if (!Array.isArray(source) || !Number.isInteger(oldIndex) || !source[oldIndex]) return response.status(400).json({ error: 'Produto inválido.' });
+            const oldProduct = source[oldIndex];
+            source.splice(oldIndex, 1);
+            if (action === 'delete') await removeStoredImages(oldProduct.imagens || []);
+            request.oldProduct = oldProduct;
         }
-        product.imagens = existingImages.concat(newImages);
-        target.push(product);
+        if (action !== 'delete') {
+            const product = JSON.parse(request.body.product);
+            const existingImages = JSON.parse(request.body.existingImages || '[]');
+            const oldProduct = request.oldProduct;
+            if (oldProduct) await removeStoredImages((oldProduct.imagens || []).filter((image) => !existingImages.includes(image)));
+            const newImages = [];
+            for (const file of request.files || []) {
+                const filename = safeFileName(file.originalname);
+                await fs.rename(file.path, path.join(UPLOAD_DIR, filename));
+                newImages.push(`floricultura files/${filename}`);
+            }
+            product.imagens = existingImages.concat(newImages);
+            target.push(product);
+        }
+        await writeCatalogLocally(catalog);
+        response.once('finish', () => {
+            queuePublication()
+                .then((publication) => {
+                    if (!publication.ok && !publication.skipped) console.error(publication.message);
+                })
+                .catch((error) => console.error(`Falha ao publicar catálogo: ${errorOutput(error)}`));
+        });
+        response.status(200).json(catalog);
+    } catch (error) {
+        console.error(`Falha ao salvar produto: ${errorOutput(error)}`);
+        if (!response.headersSent) response.status(500).json({ error: 'Não foi possível salvar o produto.' });
     }
-    const publication = await writeCatalog(catalog);
-    setPublicationStatus(response, publication);
-    response.json(catalog);
 });
 
 app.post('/api/publish', requireSession, async (request, response) => response.json(await queuePublication()));
