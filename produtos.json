@@ -2,16 +2,6 @@
   "buques": {
     "noivas": [
       {
-        "titulo": "Buquê de Lírio Dobrado",
-        "descricao": "Buquê de lírio dobrado e finalizado com fita de cetim.",
-        "preco": 140,
-        "imagens": [
-          "floricultura files/1793732769920-9ee484f16c.webp",
-          "floricultura files/1793732769920-c1aebd6637.webp",
-          "floricultura files/1793732769921-db8a39829f.webp"
-        ]
-      },
-      {
         "titulo": "Buquê de Rosas com ruscus",
         "descricao": "Buquê com rosas brancas, ruscus, mosquitinho e finalizado com fita de cetim.",
         "preco": 180,
@@ -87,6 +77,16 @@
           "floricultura files/1793732689684-3a13eecbab.webp",
           "floricultura files/1793732689685-714a99e5c6.webp",
           "floricultura files/1793732689685-ec3ee3d046.webp"
+        ]
+      },
+      {
+        "titulo": "Buquê de Lírio Dobrado",
+        "descricao": "Buquê de lírio dobrado e finalizado com fita de cetim.",
+        "preco": 140,
+        "imagens": [
+          "floricultura files/1793732769920-9ee484f16c.webp",
+          "floricultura files/1793732769920-c1aebd6637.webp",
+          "floricultura files/1793732769921-db8a39829f.webp"
         ]
       }
     ],
