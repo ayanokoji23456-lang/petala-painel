@@ -371,9 +371,9 @@
         "descricao": "...",
         "preco": 65,
         "imagens": [
+          "floricultura files/ruscus3.webp",
           "floricultura files/ruscus2.webp",
           "floricultura files/ruscus.webp",
-          "floricultura files/ruscus3.webp",
           "floricultura files/ruscus4.webp",
           "floricultura files/1790267854972-22d8d4f4eb.webp"
         ]
@@ -473,15 +473,6 @@
           "floricultura files/rose3.webp",
           "floricultura files/img-20260706-wa0042.webp",
           "floricultura files/img-20260706-wa0043.webp"
-        ]
-      },
-      {
-        "titulo": "Buquê de Girassóis com Flores do Campo",
-        "descricao": "Buquê com 6 girassóis, mosquitinho, rosas brancas, avencão, estatice roxa e 6 rosas brancas.",
-        "preco": 150,
-        "imagens": [
-          "floricultura files/pl.webp",
-          "floricultura files/pl2.webp"
         ]
       },
       {
@@ -1096,23 +1087,6 @@
     }
   ],
   "personalizados": [
-    {
-      "titulo": "Itens em MDF",
-      "descricao": "Personalizações variadas de ícones, chaveiros, imagens etc. em MDF.",
-      "preco": null,
-      "imagens": [
-        "floricultura files/1790271361043-e05484db20.webp",
-        "floricultura files/1790271361043-3387bd3db8.webp",
-        "floricultura files/1790271361043-b8e7dbf201.webp",
-        "floricultura files/1790271361043-cb0e50ab90.webp",
-        "floricultura files/1790271361043-624ac3b305.webp",
-        "floricultura files/1790271361043-a8da2290c4.webp",
-        "floricultura files/1790271361043-430a550c3d.webp",
-        "floricultura files/1790271361043-1cda19c7a5.webp",
-        "floricultura files/1790271361043-946b0212eb.webp",
-        "floricultura files/1790271361043-8a505c7b56.webp"
-      ]
-    },
     {
       "titulo": "Suculenta P Personalizada",
       "descricao": "Suculenta P com encarte e tag de papel personalizado. Caixa com 15 unidades.",
